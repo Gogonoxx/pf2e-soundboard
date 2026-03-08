@@ -1,0 +1,20 @@
+{
+  "pf2e-soundboard": {
+    "title": "Pathfinder Soundboard",
+    "tabs": {
+      "voices": "Voices",
+      "sfx": "SFX",
+      "music": "Music",
+      "ambience": "Ambience"
+    },
+    "favorites": "Quick Access Favorites",
+    "editHotbar": "Edit Hotbar",
+    "search": "Search sounds...",
+    "addSound": "Add Sound",
+    "addCategory": "Add Category",
+    "noSounds": "No sounds yet. Click Edit to add some!",
+    "voicemodPlaceholder": "VoiceMod integration coming soon. Request your API key at voicemod.net/developers",
+    "confirmDelete": "Really delete this sound?",
+    "confirmDeleteCategory": "Delete this category and all its sounds?"
+  }
+}

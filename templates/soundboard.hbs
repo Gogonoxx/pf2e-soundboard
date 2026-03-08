@@ -1,0 +1,373 @@
+<div class="soundboard-wrapper">
+
+  {{!-- ===== HEADER ===== --}}
+  <div class="soundboard-header">
+    <div class="header-title">
+      <i class="fas fa-volume-up"></i>
+      <span>PATHFINDER SOUNDBOARD</span>
+    </div>
+    <div class="header-controls">
+      <div class="search-box">
+        <input type="text" data-action="search" placeholder="Search sounds..." value="{{searchQuery}}">
+        <i class="fas fa-search"></i>
+      </div>
+    </div>
+  </div>
+
+  {{!-- ===== TAB BAR (5 Tabs) ===== --}}
+  <div class="soundboard-tabs">
+    <button class="tab-btn {{#if (eq activeTab 'voices')}}active{{/if}}"
+            data-action="switch-tab" data-tab="voices">
+      <i class="fas fa-microphone"></i> VOICES
+    </button>
+    <button class="tab-btn {{#if (eq activeTab 'sfx')}}active{{/if}}"
+            data-action="switch-tab" data-tab="sfx">
+      <i class="fas fa-wand-sparkles"></i> SFX
+    </button>
+    <button class="tab-btn {{#if (eq activeTab 'ambience')}}active{{/if}}"
+            data-action="switch-tab" data-tab="ambience">
+      <i class="fas fa-wind"></i> AMBIENCE
+    </button>
+    <button class="tab-btn {{#if (eq activeTab 'mood')}}active{{/if}}"
+            data-action="switch-tab" data-tab="mood">
+      <i class="fas fa-masks-theater"></i> MOOD
+    </button>
+    <button class="tab-btn {{#if (eq activeTab 'themes')}}active{{/if}}"
+            data-action="switch-tab" data-tab="themes">
+      <i class="fas fa-music"></i> THEMES
+    </button>
+  </div>
+
+  {{!-- ===== SUB-TAB BAR (Themes only) ===== --}}
+  {{#if subTabs}}
+    <div class="soundboard-subtabs">
+      {{#each subTabs}}
+        <button class="subtab-btn {{#if active}}active{{/if}}"
+                data-action="switch-subtab" data-subtab="{{id}}">
+          <i class="{{icon}}"></i> {{label}}
+        </button>
+      {{/each}}
+    </div>
+  {{/if}}
+
+  {{!-- ===== CONTENT AREA ===== --}}
+  <div class="soundboard-content">
+
+    {{!-- VOICES TAB (VoiceMod Integration) --}}
+    {{#if isVoicesTab}}
+      <div class="voices-tab">
+
+        {{!-- No API Key configured --}}
+        {{#unless voiceMod.hasApiKey}}
+          <div class="voices-placeholder">
+            <i class="fas fa-key"></i>
+            <p>VoiceMod API Key Required</p>
+            <p class="hint">Set your API key in Module Settings (gear icon). Get one at voicemod.net/developers</p>
+          </div>
+        {{else}}
+
+          {{!-- Connection status bar --}}
+          <div class="vm-status-bar vm-status-{{voiceMod.status}}">
+            {{#if (eq voiceMod.status 'connected')}}
+              <i class="fas fa-circle vm-dot"></i> Connected
+            {{else if (eq voiceMod.status 'connecting')}}
+              <i class="fas fa-spinner fa-spin"></i> Connecting...
+            {{else if (eq voiceMod.status 'error')}}
+              <i class="fas fa-exclamation-triangle"></i> Connection Failed
+            {{else}}
+              <i class="fas fa-circle vm-dot"></i> Disconnected
+            {{/if}}
+
+            <div class="vm-status-actions">
+              {{#if (eq voiceMod.status 'connected')}}
+                <button class="vm-toggle-btn {{#if voiceMod.enabled}}active{{/if}}" data-action="vm-toggle-changer">
+                  <i class="fas fa-{{#if voiceMod.enabled}}microphone{{else}}microphone-slash{{/if}}"></i>
+                  {{#if voiceMod.enabled}}ON{{else}}OFF{{/if}}
+                </button>
+                <button class="vm-action-btn" data-action="vm-random-voice" title="Random Voice">
+                  <i class="fas fa-shuffle"></i>
+                </button>
+                <button class="vm-action-btn" data-action="vm-disconnect" title="Disconnect">
+                  <i class="fas fa-plug-circle-xmark"></i>
+                </button>
+              {{else}}
+                <button class="vm-action-btn vm-connect-btn" data-action="vm-connect">
+                  <i class="fas fa-plug"></i> Connect
+                </button>
+              {{/if}}
+            </div>
+          </div>
+
+          {{!-- Voice Grid --}}
+          {{#if (eq voiceMod.status 'connected')}}
+            {{#if voiceMod.voices.length}}
+              <div class="vm-voice-grid">
+                {{#each voiceMod.voices}}
+                  <div class="vm-voice-btn {{#if isActive}}active{{/if}} {{#if isFavorite}}favorite{{/if}}"
+                       data-action="vm-load-voice" data-voice-id="{{id}}">
+                    <div class="vm-voice-avatar">
+                      {{#if bitmapUrl}}
+                        <img class="vm-voice-img" src="{{bitmapUrl}}" alt="">
+                      {{else}}
+                        <i class="fas fa-user vm-voice-icon"></i>
+                      {{/if}}
+                    </div>
+                    <span class="vm-voice-name">{{name}}</span>
+                    {{#if isFavorite}}<i class="fas fa-star vm-fav-star"></i>{{/if}}
+                  </div>
+                {{/each}}
+              </div>
+            {{else}}
+              <div class="voices-placeholder">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading voices...</p>
+              </div>
+            {{/if}}
+          {{else}}
+            <div class="voices-placeholder">
+              <i class="fas fa-plug"></i>
+              <p>Click "Connect" to link with VoiceMod</p>
+              <p class="hint">Make sure VoiceMod desktop app is running</p>
+            </div>
+          {{/if}}
+
+        {{/unless}}
+      </div>
+    {{else}}
+
+      {{!-- Stop button for loop tabs --}}
+      {{#if hasStopButton}}
+        <div class="tab-controls">
+          <button class="stop-all-btn" data-action="stop-all">
+            <i class="fas fa-stop"></i> Stop All
+          </button>
+        </div>
+      {{/if}}
+
+      {{!-- CATEGORIES --}}
+      <div class="soundboard-categories">
+        {{#each categories}}
+          <div class="category-section {{#if collapsed}}collapsed{{/if}}">
+
+            {{!-- Category Header --}}
+            <div class="category-header" data-action="toggle-category" data-category-id="{{id}}">
+              <i class="{{icon}} category-icon"></i>
+              <span class="category-name">{{name}}</span>
+              <span class="sound-count">{{sounds.length}}</span>
+
+              {{!-- Play random button --}}
+              <button class="random-btn" data-action="play-random" data-category-id="{{id}}" title="Play Random">
+                <i class="fas fa-shuffle"></i>
+              </button>
+
+              <i class="fas fa-chevron-down chevron"></i>
+
+              {{!-- Edit mode: delete category (SFX only) --}}
+              {{#if ../editMode}}
+                {{#if ../isSfxTab}}
+                  <button class="edit-btn delete-cat-btn" data-action="delete-category" data-category-id="{{id}}" title="Delete Category">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {{/if}}
+              {{/if}}
+            </div>
+
+            {{!-- Sound Grid --}}
+            {{#unless collapsed}}
+              <div class="sound-grid">
+                {{#each sounds}}
+                  <div class="sound-btn {{#if playing}}playing{{/if}} {{#if (eq rating 1)}}upvoted{{/if}} {{#if (eq rating -1)}}downvoted{{/if}}"
+                       draggable="true"
+                       data-action="play-sound"
+                       data-src="{{src}}"
+                       data-sound-id="{{id}}"
+                       data-sound-name="{{name}}"
+                       data-sound-icon="{{icon}}"
+                       data-category-id="{{../id}}">
+                    <i class="{{icon}} sound-icon"></i>
+                    <span class="sound-name">{{name}}</span>
+
+                    {{!-- Rating & fav buttons --}}
+                    <div class="sound-actions">
+                      {{#if playing}}
+                        <button class="action-btn fav-btn" data-action="fav-playing"
+                                data-sound-id="{{id}}" data-src="{{src}}"
+                                data-sound-name="{{name}}" data-sound-icon="{{icon}}" title="Add to Favorites">
+                          <i class="fas fa-star"></i>
+                        </button>
+                      {{/if}}
+                      <button class="action-btn rate-up {{#if (eq rating 1)}}active{{/if}}"
+                              data-action="rate-sound" data-sound-id="{{id}}" data-rate-value="1" title="Upvote">
+                        <i class="fas fa-thumbs-up"></i>
+                      </button>
+                      <button class="action-btn rate-down {{#if (eq rating -1)}}active{{/if}}"
+                              data-action="rate-sound" data-sound-id="{{id}}" data-rate-value="-1" title="Downvote">
+                        <i class="fas fa-thumbs-down"></i>
+                      </button>
+                    </div>
+
+                    {{!-- Edit mode overlay (SFX only) --}}
+                    {{#if ../../editMode}}
+                      {{#if ../../isSfxTab}}
+                        <div class="sound-edit-overlay">
+                          <button class="edit-btn" data-action="edit-sound" data-category-id="{{../id}}" data-sound-id="{{id}}" title="Edit">
+                            <i class="fas fa-pen"></i>
+                          </button>
+                          <button class="edit-btn delete-btn" data-action="delete-sound" data-category-id="{{../id}}" data-sound-id="{{id}}" title="Delete">
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                      {{/if}}
+                    {{/if}}
+                  </div>
+                {{/each}}
+
+                {{!-- Add sound button (SFX edit mode only) --}}
+                {{#if ../editMode}}
+                  {{#if ../isSfxTab}}
+                    <div class="sound-btn add-sound-btn" data-action="add-sound" data-category-id="{{id}}">
+                      <i class="fas fa-plus sound-icon"></i>
+                      <span class="sound-name">Add Sound</span>
+                    </div>
+                  {{/if}}
+                {{/if}}
+              </div>
+
+              {{!-- Empty state --}}
+              {{#unless sounds.length}}
+                {{#unless ../editMode}}
+                  <div class="empty-state">No sounds</div>
+                {{/unless}}
+              {{/unless}}
+            {{/unless}}
+
+          </div>
+        {{/each}}
+
+        {{!-- Add category (SFX edit mode only) --}}
+        {{#if editMode}}
+          {{#if isSfxTab}}
+            <div class="category-section add-category-section">
+              <div class="add-category-btn" data-action="add-category">
+                <i class="fas fa-plus"></i>
+                <span>Add Category</span>
+              </div>
+            </div>
+          {{/if}}
+        {{/if}}
+      </div>
+
+      {{!-- Empty tab --}}
+      {{#unless categories.length}}
+        {{#unless editMode}}
+          <div class="empty-tab">
+            <i class="fas fa-music"></i>
+            {{#if isSfxTab}}
+              <p>No sounds yet. Click "Edit Hotbar" to add some!</p>
+            {{else}}
+              <p>No sounds found in manifest.</p>
+            {{/if}}
+          </div>
+        {{/unless}}
+      {{/unless}}
+
+    {{/if}}
+  </div>
+
+  {{!-- ===== NOW PLAYING (VoiceMod + multi-track) ===== --}}
+  {{#if hasNowPlaying}}
+    <div class="now-playing-section">
+
+      {{!-- VoiceMod active voice track --}}
+      {{#if voiceMod.currentVoiceName}}
+        {{#if (eq voiceMod.status 'connected')}}
+          <div class="np-track np-track-voice">
+            {{#if voiceMod.currentVoiceBitmap}}
+              <img class="np-voice-avatar" src="{{voiceMod.currentVoiceBitmap}}" alt="">
+            {{else}}
+              <i class="fas fa-microphone np-icon np-icon-voice"></i>
+            {{/if}}
+            <span class="np-name" title="{{voiceMod.currentVoiceName}}">{{voiceMod.currentVoiceName}}</span>
+
+            <div class="np-controls">
+              <button class="np-btn {{#if voiceMod.enabled}}np-btn-active{{/if}}" data-action="vm-np-toggle"
+                      title="Voice On/Off"><i class="fas fa-power-off"></i></button>
+              <button class="np-btn {{#if voiceMod.hearMyself}}np-btn-active{{/if}}" data-action="vm-np-hear"
+                      title="Hear Myself"><i class="fas fa-headphones"></i></button>
+              <button class="np-btn {{#if voiceMod.backgroundEnabled}}np-btn-active{{/if}}" data-action="vm-np-background"
+                      title="Background Sounds"><i class="fas fa-volume-xmark"></i></button>
+            </div>
+          </div>
+        {{/if}}
+      {{/if}}
+
+      {{!-- Audio tracks --}}
+      {{#each nowPlayingTracks}}
+        <div class="np-track {{#if paused}}paused{{/if}}">
+          <i class="{{icon}} np-icon"></i>
+          <span class="np-name" title="{{name}}">{{name}}</span>
+
+          <div class="np-controls">
+            <button class="np-btn {{#if loop}}np-btn-active{{/if}}" data-action="np-loop"
+                    data-sound-id="{{soundId}}" title="Loop"><i class="fas fa-repeat"></i></button>
+            <button class="np-btn {{#if (eq rating 1)}}np-btn-upvoted{{/if}}" data-action="np-rate"
+                    data-sound-id="{{soundId}}" data-rate-value="1" title="Upvote"><i class="fas fa-thumbs-up"></i></button>
+            <button class="np-btn {{#if (eq rating -1)}}np-btn-downvoted{{/if}}" data-action="np-rate"
+                    data-sound-id="{{soundId}}" data-rate-value="-1" title="Downvote"><i class="fas fa-thumbs-down"></i></button>
+            <button class="np-btn np-btn-fav" data-action="np-fav"
+                    data-sound-id="{{soundId}}" title="Favorite"><i class="fas fa-star"></i></button>
+
+            <span class="np-sep"></span>
+
+            <button class="np-btn" data-action="np-prev"
+                    data-sound-id="{{soundId}}" title="Previous"><i class="fas fa-backward-step"></i></button>
+            <button class="np-btn np-btn-main" data-action="np-pause"
+                    data-sound-id="{{soundId}}" title="{{#if paused}}Resume{{else}}Pause{{/if}}">
+              <i class="fas fa-{{#if paused}}play{{else}}pause{{/if}}"></i>
+            </button>
+            <button class="np-btn" data-action="np-next"
+                    data-sound-id="{{soundId}}" title="Next"><i class="fas fa-forward-step"></i></button>
+            <button class="np-btn np-btn-stop" data-action="np-stop"
+                    data-sound-id="{{soundId}}" title="Stop"><i class="fas fa-stop"></i></button>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  {{/if}}
+
+  {{!-- ===== FAVORITES BAR ===== --}}
+  <div class="favorites-bar">
+    <div class="favorites-grid">
+      {{#each favorites}}
+        {{#if empty}}
+          <div class="favorite-slot empty-slot" data-slot="{{slot}}">
+            <div class="favorite-icon" style="background: #333;">
+              <i class="fas fa-plus"></i>
+            </div>
+            <span class="favorite-name">&mdash;</span>
+          </div>
+        {{else}}
+          <div class="favorite-slot" data-action="play-favorite" data-slot="{{slot}}">
+            <div class="favorite-icon" style="background: {{color}};">
+              <i class="{{icon}}"></i>
+            </div>
+            <span class="favorite-name">{{name}}</span>
+            <button class="fav-remove-btn" data-action="remove-favorite" data-slot="{{slot}}">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        {{/if}}
+      {{/each}}
+    </div>
+    {{#if isSfxTab}}
+      <button class="edit-hotbar-btn" data-action="toggle-edit">
+        {{#if editMode}}
+          <i class="fas fa-check"></i> DONE
+        {{else}}
+          <i class="fas fa-pen"></i> EDIT
+        {{/if}}
+      </button>
+    {{/if}}
+  </div>
+
+</div>
