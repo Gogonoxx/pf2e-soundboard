@@ -858,6 +858,61 @@
   border-color: var(--sb-red-bright);
 }
 
+/* --- Now Playing Volume Slider --- */
+.np-volume {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.np-volume-icon {
+  color: var(--sb-text-dim);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.np-volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 70px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.np-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--sb-gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+}
+
+.np-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--sb-gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+}
+
+.np-volume-slider:hover::-webkit-slider-thumb {
+  background: var(--sb-text);
+}
+
+.np-volume-slider:hover::-moz-range-thumb {
+  background: var(--sb-text);
+}
+
 /* --- VoiceMod Now Playing Track --- */
 .np-track-voice {
   background: linear-gradient(to right, rgba(90, 138, 90, 0.2), rgba(90, 138, 90, 0.05));

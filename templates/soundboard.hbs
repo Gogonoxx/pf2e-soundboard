@@ -329,6 +329,14 @@
                     data-sound-id="{{soundId}}" title="Next"><i class="fas fa-forward-step"></i></button>
             <button class="np-btn np-btn-stop" data-action="np-stop"
                     data-sound-id="{{soundId}}" title="Stop"><i class="fas fa-stop"></i></button>
+
+            <span class="np-sep"></span>
+
+            <div class="np-volume">
+              <i class="fas fa-volume-low np-volume-icon"></i>
+              <input type="range" class="np-volume-slider" data-action="np-volume"
+                     data-sound-id="{{soundId}}" min="0" max="1" step="0.05" value="{{volume}}">
+            </div>
           </div>
         </div>
       {{/each}}

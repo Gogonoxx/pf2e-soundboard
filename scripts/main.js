@@ -745,7 +745,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         src: entry.src,
         paused: entry.paused || false,
         loop: entry.audio?.loop || false,
-        rating: ratings[id] || 0
+        rating: ratings[id] || 0,
+        volume: entry.audio?.volume ?? game.settings.get(MODULE_ID, 'globalVolume')
       });
     }
 
@@ -1086,6 +1087,20 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     html.querySelectorAll('[data-action="np-next"]').forEach(el => {
       el.addEventListener('click', () => {
         this.#playAdjacentTrack(el.dataset.soundId, 1);
+      });
+    });
+    html.querySelectorAll('[data-action="np-volume"]').forEach(el => {
+      el.addEventListener('input', (ev) => {
+        const soundId = el.dataset.soundId;
+        const vol = parseFloat(ev.target.value);
+        const entry = this.#activeSounds.get(soundId);
+        if (entry?.audio) {
+          entry.audio.volume = vol;
+          // Broadcast volume change to clients
+          game.socket.emit(`module.${MODULE_ID}`, {
+            action: 'volume', src: entry.src, volume: vol
+          });
+        }
       });
     });
 
@@ -1819,6 +1834,9 @@ async function handleSocketMessage(data) {
   } else if (data.action === 'resume') {
     const audio = _socketSounds.get(data.src);
     if (audio) try { audio.play(); } catch (e) { /* */ }
+  } else if (data.action === 'volume') {
+    const audio = _socketSounds.get(data.src);
+    if (audio) audio.volume = data.volume ?? 0.8;
   }
 }
 
