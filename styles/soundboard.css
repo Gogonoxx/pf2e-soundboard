@@ -858,6 +858,33 @@
   border-color: var(--sb-red-bright);
 }
 
+/* --- Pinned Tracks --- */
+.np-track-pinned {
+  background: linear-gradient(to right, rgba(180, 140, 60, 0.1), rgba(180, 140, 60, 0.03));
+  border-left: 2px solid var(--sb-gold);
+  opacity: 0.7;
+}
+
+.np-track-pinned:hover {
+  opacity: 1;
+}
+
+.np-pin-indicator {
+  color: var(--sb-gold);
+  font-size: 0.6rem;
+  flex-shrink: 0;
+  margin-right: -2px;
+}
+
+.np-icon-pinned {
+  animation: none;
+  opacity: 0.6;
+}
+
+.np-btn-unpin:hover {
+  color: var(--sb-red-bright);
+}
+
 /* --- Now Playing Volume Slider --- */
 .np-volume {
   display: flex;

@@ -158,6 +158,20 @@ function prefetchAudio(src) {
 }
 
 // ============================================================================
+// Audio Store — Module-level singleton that survives app window close/reopen
+// Holds all active Audio elements so they persist across UI lifecycle.
+// ============================================================================
+
+const AudioStore = {
+  /** @type {Map<string, {audio: HTMLAudioElement, src: string, name: string, icon: string, categoryId: string, tab: string, paused: boolean, loop: boolean, sliderValue: number}>} */
+  activeSounds: new Map(),
+  playingIds: new Set(),
+  currentTrackId: {},  // per-tab: { mood: 'id', themes: 'id' }
+  /** @type {Map<string, {soundId: string, src: string, name: string, icon: string, categoryId: string, tab: string}>} */
+  pinnedTracks: new Map(),  // soundId -> track info (persists after stop)
+};
+
+// ============================================================================
 // VoiceMod Manager — WebSocket Client for VoiceMod Control API
 // ============================================================================
 
@@ -564,9 +578,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   #activeSubTab = 'atmosphaere';  // Sub-tab within themes
   #editMode = false;
   #expandedCategories = new Set(); // Categories are COLLAPSED by default
-  #playingIds = new Set();        // IDs with active playback (for UI glow)
-  #activeSounds = new Map();      // id -> { audio: HTMLAudioElement, src, name, icon, categoryId, tab, paused, loop }
-  #currentTrackId = {};           // Per-tab: { mood: 'id', themes: 'id' }
+  // Audio state lives in module-level AudioStore (survives window close/reopen)
   #searchQuery = '';
   #scrollPosition = 0;
   #voiceMod = null;              // VoiceModManager instance
@@ -740,7 +752,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       collapsed: !this.#expandedCategories.has(cat.id),
       sounds: cat.sounds.map(s => ({
         ...s,
-        playing: this.#playingIds.has(s.id),
+        playing: AudioStore.playingIds.has(s.id),
         rating: ratings[s.id] || 0
       })).sort((a, b) => (b.rating || 0) - (a.rating || 0))
     }));
@@ -755,7 +767,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Now Playing: build list from all active sounds
     const nowPlayingTracks = [];
-    for (const [id, entry] of this.#activeSounds) {
+    for (const [id, entry] of AudioStore.activeSounds) {
       nowPlayingTracks.push({
         soundId: id,
         name: entry.name || 'Unknown',
@@ -764,8 +776,24 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         paused: entry.paused || false,
         loop: entry.audio?.loop || false,
         rating: ratings[id] || 0,
-        volume: entry.sliderValue ?? game.settings.get(MODULE_ID, 'globalVolume')
+        volume: entry.sliderValue ?? game.settings.get(MODULE_ID, 'globalVolume'),
+        pinned: AudioStore.pinnedTracks.has(id)
       });
+    }
+
+    // Pinned tracks that are NOT currently playing
+    const pinnedTracks = [];
+    for (const [id, pin] of AudioStore.pinnedTracks) {
+      if (!AudioStore.activeSounds.has(id)) {
+        pinnedTracks.push({
+          soundId: id,
+          name: pin.name,
+          icon: pin.icon || 'fas fa-music',
+          src: pin.src,
+          categoryId: pin.categoryId,
+          tab: pin.tab
+        });
+      }
     }
 
     // Sub-tabs for themes
@@ -782,7 +810,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       categories,
       favorites,
       nowPlayingTracks,
-      hasNowPlaying: nowPlayingTracks.length > 0 || (this.#voiceMod?.status === 'connected' && !!this.#voiceMod?.currentVoiceId),
+      pinnedTracks,
+      hasNowPlaying: nowPlayingTracks.length > 0 || pinnedTracks.length > 0 || (this.#voiceMod?.status === 'connected' && !!this.#voiceMod?.currentVoiceId),
       subTabs,
       isVoicesTab: tab === 'voices',
       voiceMod: {
@@ -1091,7 +1120,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     html.querySelectorAll('[data-action="np-fav"]').forEach(el => {
       el.addEventListener('click', () => {
         const soundId = el.dataset.soundId;
-        const entry = this.#activeSounds.get(soundId);
+        const entry = AudioStore.activeSounds.get(soundId);
         if (entry) {
           this.#showFavoriteDialog(soundId, entry.name, entry.src, entry.icon);
         }
@@ -1112,7 +1141,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const soundId = el.dataset.soundId;
         const sliderVal = parseFloat(ev.target.value);
         const vol = sliderToVolume(sliderVal);
-        const entry = this.#activeSounds.get(soundId);
+        const entry = AudioStore.activeSounds.get(soundId);
         if (entry?.audio) {
           entry.audio.volume = vol;
           entry.sliderValue = sliderVal;
@@ -1121,6 +1150,38 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
             action: 'volume', src: entry.src, volume: vol
           });
         }
+      });
+    });
+
+    // --- Pin/Unpin/Play-Pinned ---
+    html.querySelectorAll('[data-action="np-pin"]').forEach(el => {
+      el.addEventListener('click', () => {
+        const soundId = el.dataset.soundId;
+        const entry = AudioStore.activeSounds.get(soundId);
+        if (!entry) return;
+        if (AudioStore.pinnedTracks.has(soundId)) {
+          AudioStore.pinnedTracks.delete(soundId);
+        } else {
+          AudioStore.pinnedTracks.set(soundId, {
+            soundId, src: entry.src, name: entry.name,
+            icon: entry.icon, categoryId: entry.categoryId, tab: entry.tab
+          });
+        }
+        this.render();
+      });
+    });
+    html.querySelectorAll('[data-action="np-unpin"]').forEach(el => {
+      el.addEventListener('click', () => {
+        AudioStore.pinnedTracks.delete(el.dataset.soundId);
+        this.render();
+      });
+    });
+    html.querySelectorAll('[data-action="np-play-pinned"]').forEach(el => {
+      el.addEventListener('click', () => {
+        const { src, soundId, soundName, soundIcon, categoryId, tab } = el.dataset;
+        this.#handlePlay(soundId, src, {
+          name: soundName, icon: soundIcon, categoryId, tab
+        });
       });
     });
 
@@ -1269,10 +1330,11 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // ---------------------------------------------------------------------------
 
   #handlePlay(soundId, src, meta = {}) {
-    const behavior = this.#getTabBehavior(this.#activeTab);
+    const tab = meta.tab || this.#activeTab;
+    const behavior = this.#getTabBehavior(tab);
     this.#playWithBehavior(soundId, src, behavior, {
       ...meta,
-      tab: this.#activeTab
+      tab
     });
   }
 
@@ -1299,7 +1361,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const sliderVal = game.settings.get(MODULE_ID, 'globalVolume');
     const volume = sliderToVolume(sliderVal);
 
-    this.#playingIds.add(soundId);
+    AudioStore.playingIds.add(soundId);
     this.render();
 
     // Check browser cache first → instant if cached
@@ -1320,7 +1382,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     setTimeout(() => {
-      this.#playingIds.delete(soundId);
+      AudioStore.playingIds.delete(soundId);
       if (this.rendered) this.render();
     }, 600);
   }
@@ -1334,18 +1396,18 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const tab = meta.tab || this.#activeTab;
     const sliderVal = game.settings.get(MODULE_ID, 'globalVolume');
     const volume = sliderToVolume(sliderVal);
-    const currentId = this.#currentTrackId[tab];
+    const currentId = AudioStore.currentTrackId[tab];
 
     // If same track -> fade out and stop
     if (currentId === soundId) {
-      const entry = this.#activeSounds.get(soundId);
+      const entry = AudioStore.activeSounds.get(soundId);
       if (entry?.audio) {
         fadeOut(entry.audio).then(() => this.#stopSound(soundId));
       } else {
         this.#stopSound(soundId);
       }
-      this.#playingIds.delete(soundId);
-      this.#currentTrackId[tab] = null;
+      AudioStore.playingIds.delete(soundId);
+      AudioStore.currentTrackId[tab] = null;
       if (entry) game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src: entry.src });
       this.render();
       return;
@@ -1353,15 +1415,15 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Fade out current track in this tab, then stop
     if (currentId) {
-      const current = this.#activeSounds.get(currentId);
+      const current = AudioStore.activeSounds.get(currentId);
       if (current?.audio) {
         fadeOut(current.audio).then(() => {
           try { current.audio.pause(); current.audio.src = ''; } catch (e) { /* */ }
-          this.#activeSounds.delete(currentId);
+          AudioStore.activeSounds.delete(currentId);
         });
         game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src: current.src });
       }
-      this.#playingIds.delete(currentId);
+      AudioStore.playingIds.delete(currentId);
     }
 
     // Play new track — check cache first, then native Audio with fade in
@@ -1382,15 +1444,15 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     // Cache in background for next time
     if (!cachedUrl) cacheAudioInBackground(src);
 
-    this.#activeSounds.set(soundId, {
+    AudioStore.activeSounds.set(soundId, {
       audio, src,
       name: meta.name, icon: meta.icon,
       categoryId: meta.categoryId, tab,
       paused: false, loop: true,
       sliderValue: sliderVal
     });
-    this.#currentTrackId[tab] = soundId;
-    this.#playingIds.add(soundId);
+    AudioStore.currentTrackId[tab] = soundId;
+    AudioStore.playingIds.add(soundId);
 
     game.socket.emit(`module.${MODULE_ID}`, {
       action: 'play', src, volume, loop: true
@@ -1408,16 +1470,16 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const volume = sliderToVolume(sliderVal);
 
     // Toggle off — fade out
-    if (this.#activeSounds.has(soundId)) {
-      const entry = this.#activeSounds.get(soundId);
-      this.#playingIds.delete(soundId);
+    if (AudioStore.activeSounds.has(soundId)) {
+      const entry = AudioStore.activeSounds.get(soundId);
+      AudioStore.playingIds.delete(soundId);
       if (entry?.audio) {
         fadeOut(entry.audio).then(() => {
           try { entry.audio.pause(); entry.audio.src = ''; } catch (e) { /* */ }
-          this.#activeSounds.delete(soundId);
+          AudioStore.activeSounds.delete(soundId);
         });
       } else {
-        this.#activeSounds.delete(soundId);
+        AudioStore.activeSounds.delete(soundId);
       }
       game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src });
       this.render();
@@ -1442,14 +1504,14 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     // Cache in background for next time
     if (!cachedUrl) cacheAudioInBackground(src);
 
-    this.#activeSounds.set(soundId, {
+    AudioStore.activeSounds.set(soundId, {
       audio, src,
       name: meta.name, icon: meta.icon,
       categoryId: meta.categoryId, tab: meta.tab || 'ambience',
       paused: false, loop: true,
       sliderValue: sliderVal
     });
-    this.#playingIds.add(soundId);
+    AudioStore.playingIds.add(soundId);
 
     game.socket.emit(`module.${MODULE_ID}`, {
       action: 'play', src, volume, loop: true
@@ -1463,7 +1525,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // ---------------------------------------------------------------------------
 
   #stopSound(soundId) {
-    const entry = this.#activeSounds.get(soundId);
+    const entry = AudioStore.activeSounds.get(soundId);
     if (entry?.audio) {
       try {
         entry.audio.pause();
@@ -1473,35 +1535,23 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         console.warn(`${MODULE_ID} | Failed to stop sound:`, e);
       }
     }
-    this.#activeSounds.delete(soundId);
+    AudioStore.activeSounds.delete(soundId);
   }
 
   #stopAllInTab() {
-    const tab = this.#activeTab;
-
-    // For loop-single tabs, stop the current track
-    if (this.#currentTrackId[tab]) {
-      const id = this.#currentTrackId[tab];
-      const entry = this.#activeSounds.get(id);
-      if (entry) {
-        this.#stopSound(id);
-        game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src: entry.src });
+    // Stop ALL active sounds across ALL tabs
+    for (const [, entry] of AudioStore.activeSounds) {
+      if (entry.audio) {
+        try { entry.audio.pause(); entry.audio.currentTime = 0; entry.audio.src = ''; } catch (e) { /* */ }
       }
-      this.#playingIds.delete(id);
-      this.#currentTrackId[tab] = null;
     }
-
-    // For loop-multi (ambience), stop all active sounds
-    if (this.#getTabBehavior(tab) === 'loop-multi') {
-      for (const [id, entry] of this.#activeSounds) {
-        if (entry.audio) {
-          try { entry.audio.pause(); entry.audio.src = ''; } catch (e) { /* */ }
-        }
-        game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src: entry.src });
-      }
-      this.#activeSounds.clear();
-      this.#playingIds.clear();
+    AudioStore.activeSounds.clear();
+    AudioStore.playingIds.clear();
+    for (const key of Object.keys(AudioStore.currentTrackId)) {
+      AudioStore.currentTrackId[key] = null;
     }
+    // Single broadcast to stop all sounds on all clients
+    game.socket.emit(`module.${MODULE_ID}`, { action: 'stop-all' });
 
     this.render();
   }
@@ -1511,7 +1561,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // ---------------------------------------------------------------------------
 
   #pauseResumeTrack(soundId) {
-    const entry = this.#activeSounds.get(soundId);
+    const entry = AudioStore.activeSounds.get(soundId);
     if (!entry?.audio) return;
 
     if (entry.paused) {
@@ -1527,28 +1577,28 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   #stopTrack(soundId) {
-    const entry = this.#activeSounds.get(soundId);
+    const entry = AudioStore.activeSounds.get(soundId);
     if (!entry) return;
     const { src, tab } = entry;
-    this.#playingIds.delete(soundId);
-    if (tab && this.#currentTrackId[tab] === soundId) {
-      this.#currentTrackId[tab] = null;
+    AudioStore.playingIds.delete(soundId);
+    if (tab && AudioStore.currentTrackId[tab] === soundId) {
+      AudioStore.currentTrackId[tab] = null;
     }
     // Fade out, then clean up
     if (entry.audio) {
       fadeOut(entry.audio).then(() => {
         try { entry.audio.pause(); entry.audio.src = ''; } catch (e) { /* */ }
-        this.#activeSounds.delete(soundId);
+        AudioStore.activeSounds.delete(soundId);
       });
     } else {
-      this.#activeSounds.delete(soundId);
+      AudioStore.activeSounds.delete(soundId);
     }
     game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src });
     this.render();
   }
 
   #toggleTrackLoop(soundId) {
-    const entry = this.#activeSounds.get(soundId);
+    const entry = AudioStore.activeSounds.get(soundId);
     if (!entry?.audio) return;
     entry.audio.loop = !entry.audio.loop;
     entry.loop = entry.audio.loop;
@@ -1556,7 +1606,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   #playAdjacentTrack(soundId, direction) {
-    const entry = this.#activeSounds.get(soundId);
+    const entry = AudioStore.activeSounds.get(soundId);
     if (!entry?.categoryId || !entry?.tab) return;
 
     const subTab = (entry.tab === 'themes') ? this.#activeSubTab : null;
@@ -1837,12 +1887,23 @@ async function handleSocketMessage(data) {
 
   if (data.action === 'play') {
     try {
+      // Stop any existing sound with the same src first (prevents duplicates)
+      const existing = _socketSounds.get(data.src);
+      if (existing) {
+        try { existing.pause(); existing.src = ''; } catch (e) { /* */ }
+        _socketSounds.delete(data.src);
+      }
       const cachedUrl = await getCachedAudioUrl(data.src);
       const audio = new Audio(cachedUrl || data.src);
       audio.volume = data.volume ?? volume;
       audio.loop = data.loop ?? false;
       await audio.play();
-      if (data.loop) _socketSounds.set(data.src, audio);
+      // Store ALL sounds (not just loops) so stop always works
+      _socketSounds.set(data.src, audio);
+      // Auto-remove oneshots when they finish
+      if (!data.loop) {
+        audio.addEventListener('ended', () => _socketSounds.delete(data.src), { once: true });
+      }
       if (!cachedUrl) cacheAudioInBackground(data.src);
     } catch (err) {
       console.warn(`${MODULE_ID} | Socket play failed:`, err);
@@ -1850,7 +1911,7 @@ async function handleSocketMessage(data) {
   } else if (data.action === 'stop') {
     const audio = _socketSounds.get(data.src);
     if (audio) {
-      try { audio.pause(); audio.currentTime = 0; } catch (e) { /* */ }
+      try { audio.pause(); audio.currentTime = 0; audio.src = ''; } catch (e) { /* */ }
       _socketSounds.delete(data.src);
     }
   } else if (data.action === 'pause') {
@@ -1862,6 +1923,11 @@ async function handleSocketMessage(data) {
   } else if (data.action === 'volume') {
     const audio = _socketSounds.get(data.src);
     if (audio) audio.volume = data.volume ?? 0.8;
+  } else if (data.action === 'stop-all') {
+    for (const [, audio] of _socketSounds) {
+      try { audio.pause(); audio.currentTime = 0; audio.src = ''; } catch (e) { /* */ }
+    }
+    _socketSounds.clear();
   }
 }
 
@@ -1938,7 +2004,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         if (SoundboardApp.instance?.rendered) {
           SoundboardApp.instance.close();
         } else {
-          new SoundboardApp().render(true);
+          (SoundboardApp.instance || new SoundboardApp()).render(true);
         }
       }
     };
@@ -1946,6 +2012,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
 });
 
 window.PF2eSoundboard = {
-  open: () => new SoundboardApp().render(true),
+  open: () => (SoundboardApp.instance || new SoundboardApp()).render(true),
   refresh: () => SoundboardApp.instance?.refresh()
 };

@@ -301,6 +301,24 @@
         {{/if}}
       {{/if}}
 
+      {{!-- Pinned tracks (not currently playing) --}}
+      {{#each pinnedTracks}}
+        <div class="np-track np-track-pinned">
+          <i class="fas fa-thumbtack np-pin-indicator"></i>
+          <i class="{{icon}} np-icon np-icon-pinned"></i>
+          <span class="np-name" title="{{name}}">{{name}}</span>
+
+          <div class="np-controls">
+            <button class="np-btn np-btn-main" data-action="np-play-pinned"
+                    data-src="{{src}}" data-sound-id="{{soundId}}" data-sound-name="{{name}}"
+                    data-sound-icon="{{icon}}" data-category-id="{{categoryId}}" data-tab="{{tab}}"
+                    title="Play"><i class="fas fa-play"></i></button>
+            <button class="np-btn np-btn-unpin" data-action="np-unpin"
+                    data-sound-id="{{soundId}}" title="Unpin"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+      {{/each}}
+
       {{!-- Audio tracks --}}
       {{#each nowPlayingTracks}}
         <div class="np-track {{#if paused}}paused{{/if}}">
@@ -308,6 +326,8 @@
           <span class="np-name" title="{{name}}">{{name}}</span>
 
           <div class="np-controls">
+            <button class="np-btn {{#if pinned}}np-btn-active{{/if}}" data-action="np-pin"
+                    data-sound-id="{{soundId}}" title="Pin"><i class="fas fa-thumbtack"></i></button>
             <button class="np-btn {{#if loop}}np-btn-active{{/if}}" data-action="np-loop"
                     data-sound-id="{{soundId}}" title="Loop"><i class="fas fa-repeat"></i></button>
             <button class="np-btn {{#if (eq rating 1)}}np-btn-upvoted{{/if}}" data-action="np-rate"
