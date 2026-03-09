@@ -29,6 +29,24 @@ function buildSoundUrl(manifest, soundPath) {
   return `${manifest.worker_base_url}/${encoded}?share=music&proxy=true`;
 }
 
+/**
+ * Convert a linear slider value (0-1) to actual audio volume.
+ * The source tracks are mastered at 0 dBFS (full blast), way too loud for
+ * background ambience during a voice chat session. We cap the maximum at 15%
+ * and apply a cubic curve so the full slider range is usable.
+ *
+ * Slider 0%   → volume 0.000  (silent)
+ * Slider 25%  → volume 0.002  (barely audible)
+ * Slider 50%  → volume 0.019  (quiet background)
+ * Slider 75%  → volume 0.063  (comfortable ambience)
+ * Slider 100% → volume 0.150  (max, still reasonable)
+ */
+const VOLUME_MAX = 0.15;
+function sliderToVolume(linear) {
+  const clamped = Math.max(0, Math.min(1, linear));
+  return clamped * clamped * clamped * VOLUME_MAX;
+}
+
 const FADE_DURATION = 5000; // 5 seconds fade in/out
 const FADE_STEP = 50;       // Update every 50ms
 
@@ -746,7 +764,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         paused: entry.paused || false,
         loop: entry.audio?.loop || false,
         rating: ratings[id] || 0,
-        volume: entry.audio?.volume ?? game.settings.get(MODULE_ID, 'globalVolume')
+        volume: entry.sliderValue ?? game.settings.get(MODULE_ID, 'globalVolume')
       });
     }
 
@@ -1092,11 +1110,13 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     html.querySelectorAll('[data-action="np-volume"]').forEach(el => {
       el.addEventListener('input', (ev) => {
         const soundId = el.dataset.soundId;
-        const vol = parseFloat(ev.target.value);
+        const sliderVal = parseFloat(ev.target.value);
+        const vol = sliderToVolume(sliderVal);
         const entry = this.#activeSounds.get(soundId);
         if (entry?.audio) {
           entry.audio.volume = vol;
-          // Broadcast volume change to clients
+          entry.sliderValue = sliderVal;
+          // Broadcast volume change to clients (send actual volume, not slider value)
           game.socket.emit(`module.${MODULE_ID}`, {
             action: 'volume', src: entry.src, volume: vol
           });
@@ -1276,7 +1296,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // ---------------------------------------------------------------------------
 
   async #playOneshot(soundId, src) {
-    const volume = game.settings.get(MODULE_ID, 'globalVolume');
+    const sliderVal = game.settings.get(MODULE_ID, 'globalVolume');
+    const volume = sliderToVolume(sliderVal);
 
     this.#playingIds.add(soundId);
     this.render();
@@ -1311,7 +1332,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async #toggleLoopSingle(soundId, src, meta = {}) {
     const tab = meta.tab || this.#activeTab;
-    const volume = game.settings.get(MODULE_ID, 'globalVolume');
+    const sliderVal = game.settings.get(MODULE_ID, 'globalVolume');
+    const volume = sliderToVolume(sliderVal);
     const currentId = this.#currentTrackId[tab];
 
     // If same track -> fade out and stop
@@ -1364,7 +1386,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       audio, src,
       name: meta.name, icon: meta.icon,
       categoryId: meta.categoryId, tab,
-      paused: false, loop: true
+      paused: false, loop: true,
+      sliderValue: sliderVal
     });
     this.#currentTrackId[tab] = soundId;
     this.#playingIds.add(soundId);
@@ -1381,7 +1404,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // ---------------------------------------------------------------------------
 
   async #toggleLoopMulti(soundId, src, meta = {}) {
-    const volume = game.settings.get(MODULE_ID, 'globalVolume');
+    const sliderVal = game.settings.get(MODULE_ID, 'globalVolume');
+    const volume = sliderToVolume(sliderVal);
 
     // Toggle off — fade out
     if (this.#activeSounds.has(soundId)) {
@@ -1422,7 +1446,8 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       audio, src,
       name: meta.name, icon: meta.icon,
       categoryId: meta.categoryId, tab: meta.tab || 'ambience',
-      paused: false, loop: true
+      paused: false, loop: true,
+      sliderValue: sliderVal
     });
     this.#playingIds.add(soundId);
 
@@ -1808,7 +1833,7 @@ const _socketSounds = new Map(); // src -> HTMLAudioElement
 
 async function handleSocketMessage(data) {
   if (!data?.action) return;
-  const volume = game.settings.get(MODULE_ID, 'globalVolume');
+  const volume = sliderToVolume(game.settings.get(MODULE_ID, 'globalVolume'));
 
   if (data.action === 'play') {
     try {
@@ -1875,12 +1900,12 @@ Hooks.once('init', () => {
 
   game.settings.register(MODULE_ID, 'globalVolume', {
     name: 'Soundboard Volume',
-    hint: 'Master volume for all soundboard sounds (0-1)',
+    hint: 'Master volume for all soundboard sounds',
     scope: 'client',
     config: true,
     type: Number,
     range: { min: 0, max: 1, step: 0.05 },
-    default: 0.8
+    default: 0.5
   });
 
   game.settings.register(MODULE_ID, 'voicemodApiKey', {
