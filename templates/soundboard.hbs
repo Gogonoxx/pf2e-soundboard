@@ -369,17 +369,13 @@
       {{#each favorites}}
         {{#if empty}}
           <div class="favorite-slot empty-slot" data-slot="{{slot}}">
-            <div class="favorite-icon" style="background: #333;">
-              <i class="fas fa-plus"></i>
-            </div>
+            <i class="fas fa-plus fav-icon"></i>
             <span class="favorite-name">&mdash;</span>
           </div>
         {{else}}
-          <div class="favorite-slot" data-action="play-favorite" data-slot="{{slot}}">
-            <div class="favorite-icon" style="background: {{color}};">
-              <i class="{{icon}}"></i>
-            </div>
-            <span class="favorite-name">{{name}}</span>
+          <div class="favorite-slot" data-action="play-favorite" data-slot="{{slot}}" style="--fav-color: {{color}};">
+            <i class="{{icon}} fav-icon"></i>
+            <span class="favorite-name" title="{{name}}">{{name}}</span>
             <button class="fav-remove-btn" data-action="remove-favorite" data-slot="{{slot}}">
               <i class="fas fa-times"></i>
             </button>

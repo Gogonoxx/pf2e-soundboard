@@ -169,6 +169,10 @@ const AudioStore = {
   currentTrackId: {},  // per-tab: { mood: 'id', themes: 'id' }
   /** @type {Map<string, {soundId: string, src: string, name: string, icon: string, categoryId: string, tab: string}>} */
   pinnedTracks: new Map(),  // soundId -> track info (persists after stop)
+  /** @type {Set<HTMLAudioElement>} Safety net: ALL Audio elements ever created, so stopAll can kill orphans */
+  allAudioElements: new Set(),
+  /** @type {Set<string>} Locks to prevent race conditions during async playback setup */
+  pendingPlay: new Set(),
 };
 
 // ============================================================================
@@ -704,6 +708,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       ...cat,
       sounds: (cat.sounds || []).map(s => ({
         ...s,
+        icon: s.icon || cat.icon || 'fas fa-music',
         src: buildSoundUrl(this.#manifest, s.path)
       }))
     }));
@@ -1367,11 +1372,15 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     // Check browser cache first → instant if cached
     const cachedUrl = await getCachedAudioUrl(src);
     const audio = new Audio(cachedUrl || src);
+    AudioStore.allAudioElements.add(audio);
     audio.volume = volume;
     audio.play().catch(err => {
       console.warn(`${MODULE_ID} | Oneshot playback failed:`, err);
       ui.notifications.warn('Audio playback failed');
     });
+
+    // Auto-cleanup when done
+    audio.addEventListener('ended', () => AudioStore.allAudioElements.delete(audio), { once: true });
 
     // Cache in background for next time
     if (!cachedUrl) cacheAudioInBackground(src);
@@ -1398,6 +1407,9 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const volume = sliderToVolume(sliderVal);
     const currentId = AudioStore.currentTrackId[tab];
 
+    // Prevent race condition: if this sound is already being set up, bail
+    if (AudioStore.pendingPlay.has(soundId)) return;
+
     // If same track -> fade out and stop
     if (currentId === soundId) {
       const entry = AudioStore.activeSounds.get(soundId);
@@ -1423,6 +1435,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         fadeOut(current.audio).then(() => {
           try { current.audio.pause(); current.audio.src = ''; } catch (e) { /* */ }
           AudioStore.activeSounds.delete(currentId);
+          AudioStore.allAudioElements.delete(current.audio);
           if (this.rendered) this.render();
         });
         game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src: current.src });
@@ -1430,9 +1443,15 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       AudioStore.playingIds.delete(currentId);
     }
 
+    // Lock this sound ID during async setup to prevent duplicates
+    AudioStore.pendingPlay.add(soundId);
+    // Immediately claim the tab so other clicks know we're switching
+    AudioStore.currentTrackId[tab] = soundId;
+
     // Play new track — check cache first, then native Audio with fade in
     const cachedUrl = await getCachedAudioUrl(src);
     const audio = new Audio(cachedUrl || src);
+    AudioStore.allAudioElements.add(audio);
     audio.volume = 0; // Start silent, fade in
     audio.loop = true;
 
@@ -1442,6 +1461,18 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     } catch (err) {
       console.warn(`${MODULE_ID} | Loop playback failed:`, err);
       ui.notifications.warn('Audio playback failed');
+      AudioStore.pendingPlay.delete(soundId);
+      AudioStore.allAudioElements.delete(audio);
+      if (AudioStore.currentTrackId[tab] === soundId) AudioStore.currentTrackId[tab] = null;
+      return;
+    }
+
+    AudioStore.pendingPlay.delete(soundId);
+
+    // If another track claimed this tab while we were awaiting, kill ourselves
+    if (AudioStore.currentTrackId[tab] !== soundId) {
+      try { audio.pause(); audio.src = ''; } catch (e) { /* */ }
+      AudioStore.allAudioElements.delete(audio);
       return;
     }
 
@@ -1455,7 +1486,6 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       paused: false, loop: true,
       sliderValue: sliderVal
     });
-    AudioStore.currentTrackId[tab] = soundId;
     AudioStore.playingIds.add(soundId);
 
     game.socket.emit(`module.${MODULE_ID}`, {
@@ -1473,6 +1503,9 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const sliderVal = game.settings.get(MODULE_ID, 'globalVolume');
     const volume = sliderToVolume(sliderVal);
 
+    // Prevent race condition: if this sound is already being set up, bail
+    if (AudioStore.pendingPlay.has(soundId)) return;
+
     // Toggle off — fade out
     if (AudioStore.activeSounds.has(soundId)) {
       const entry = AudioStore.activeSounds.get(soundId);
@@ -1480,6 +1513,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       if (entry?.audio) {
         fadeOut(entry.audio).then(() => {
           try { entry.audio.pause(); entry.audio.src = ''; } catch (e) { /* */ }
+          AudioStore.allAudioElements.delete(entry.audio);
           AudioStore.activeSounds.delete(soundId);
           if (this.rendered) this.render();
         });
@@ -1491,9 +1525,13 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
+    // Lock this sound ID during async setup
+    AudioStore.pendingPlay.add(soundId);
+
     // Start loop — check cache first, then native Audio with fade in
     const cachedUrl = await getCachedAudioUrl(src);
     const audio = new Audio(cachedUrl || src);
+    AudioStore.allAudioElements.add(audio);
     audio.volume = 0;
     audio.loop = true;
 
@@ -1503,6 +1541,18 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     } catch (err) {
       console.warn(`${MODULE_ID} | Ambience playback failed:`, err);
       ui.notifications.warn('Audio playback failed');
+      AudioStore.pendingPlay.delete(soundId);
+      AudioStore.allAudioElements.delete(audio);
+      return;
+    }
+
+    AudioStore.pendingPlay.delete(soundId);
+
+    // If this sound was stopped while we were awaiting (e.g., stopAll), kill it
+    if (AudioStore.activeSounds.has(soundId)) {
+      // Another invocation got here first — kill our audio
+      try { audio.pause(); audio.src = ''; } catch (e) { /* */ }
+      AudioStore.allAudioElements.delete(audio);
       return;
     }
 
@@ -1539,12 +1589,13 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       } catch (e) {
         console.warn(`${MODULE_ID} | Failed to stop sound:`, e);
       }
+      AudioStore.allAudioElements.delete(entry.audio);
     }
     AudioStore.activeSounds.delete(soundId);
   }
 
   #stopAllInTab() {
-    // Stop ALL active sounds across ALL tabs
+    // Stop ALL tracked sounds (activeSounds)
     for (const [, entry] of AudioStore.activeSounds) {
       if (entry.audio) {
         try { entry.audio.pause(); entry.audio.currentTime = 0; entry.audio.src = ''; } catch (e) { /* */ }
@@ -1552,9 +1603,17 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     AudioStore.activeSounds.clear();
     AudioStore.playingIds.clear();
+    AudioStore.pendingPlay.clear();
     for (const key of Object.keys(AudioStore.currentTrackId)) {
       AudioStore.currentTrackId[key] = null;
     }
+
+    // SAFETY NET: Kill ALL Audio elements including orphans from race conditions
+    for (const audio of AudioStore.allAudioElements) {
+      try { audio.pause(); audio.currentTime = 0; audio.src = ''; } catch (e) { /* */ }
+    }
+    AudioStore.allAudioElements.clear();
+
     // Single broadcast to stop all sounds on all clients
     game.socket.emit(`module.${MODULE_ID}`, { action: 'stop-all' });
 
@@ -1960,7 +2019,7 @@ Hooks.once('init', () => {
     scope: 'world',
     config: false,
     type: Array,
-    default: [null, null, null, null, null, null, null, null, null, null, null, null]
+    default: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
   });
 
   game.settings.register(MODULE_ID, 'ratings', {

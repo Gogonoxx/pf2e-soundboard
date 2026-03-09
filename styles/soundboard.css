@@ -579,88 +579,80 @@
 
 .favorites-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.3rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.25rem;
   flex: 1;
 }
 
 .favorite-slot {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.35rem;
   cursor: pointer;
   position: relative;
-  transition: transform 0.1s;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 24px;
 }
 
 .favorite-slot:hover {
-  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .favorite-slot:active {
-  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-.favorite-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  transition: border-color 0.15s;
-}
-
-.favorite-slot:hover .favorite-icon {
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.favorite-icon i {
-  color: white;
-  font-size: 0.7rem;
-}
-
-.empty-slot .favorite-icon {
-  border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.empty-slot .favorite-icon i {
-  color: rgba(255, 255, 255, 0.2);
+.fav-icon {
+  color: var(--sb-gold);
   font-size: 0.65rem;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
 }
 
 .empty-slot {
   cursor: default;
-  transition: transform 0.15s, border-color 0.15s;
+  opacity: 0.3;
+  border-style: dashed;
+}
+
+.empty-slot .fav-icon {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.55rem;
 }
 
 .favorite-name {
-  font-size: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--sb-text-dim);
-  max-width: 45px;
-  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--sb-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.empty-slot .favorite-name {
+  color: var(--sb-text-dim);
 }
 
 .fav-remove-btn {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 16px;
-  height: 16px;
+  top: -5px;
+  right: -5px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--sb-red-bright);
   border: none;
   color: white;
-  font-size: 0.5rem;
+  font-size: 0.45rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -684,12 +676,9 @@
 }
 
 .favorite-slot.drop-over {
-  transform: scale(1.15);
-}
-
-.favorite-slot.drop-over .favorite-icon {
+  background: rgba(212, 168, 67, 0.15);
   border-color: var(--sb-gold) !important;
-  box-shadow: 0 0 10px rgba(212, 168, 67, 0.5);
+  box-shadow: 0 0 8px rgba(212, 168, 67, 0.3);
 }
 
 /* --- Edit Hotbar Button --- */
