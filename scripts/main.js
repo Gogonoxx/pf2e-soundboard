@@ -41,7 +41,7 @@ function buildSoundUrl(manifest, soundPath) {
  * Slider 75%  → volume 0.063  (comfortable ambience)
  * Slider 100% → volume 0.150  (max, still reasonable)
  */
-const VOLUME_MAX = 0.15;
+const VOLUME_MAX = 0.20;
 function sliderToVolume(linear) {
   const clamped = Math.max(0, Math.min(1, linear));
   return clamped * clamped * clamped * VOLUME_MAX;
@@ -1402,7 +1402,10 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (currentId === soundId) {
       const entry = AudioStore.activeSounds.get(soundId);
       if (entry?.audio) {
-        fadeOut(entry.audio).then(() => this.#stopSound(soundId));
+        fadeOut(entry.audio).then(() => {
+          this.#stopSound(soundId);
+          if (this.rendered) this.render();
+        });
       } else {
         this.#stopSound(soundId);
       }
@@ -1420,6 +1423,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         fadeOut(current.audio).then(() => {
           try { current.audio.pause(); current.audio.src = ''; } catch (e) { /* */ }
           AudioStore.activeSounds.delete(currentId);
+          if (this.rendered) this.render();
         });
         game.socket.emit(`module.${MODULE_ID}`, { action: 'stop', src: current.src });
       }
@@ -1477,6 +1481,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         fadeOut(entry.audio).then(() => {
           try { entry.audio.pause(); entry.audio.src = ''; } catch (e) { /* */ }
           AudioStore.activeSounds.delete(soundId);
+          if (this.rendered) this.render();
         });
       } else {
         AudioStore.activeSounds.delete(soundId);
@@ -1584,11 +1589,12 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (tab && AudioStore.currentTrackId[tab] === soundId) {
       AudioStore.currentTrackId[tab] = null;
     }
-    // Fade out, then clean up
+    // Fade out, then clean up and re-render
     if (entry.audio) {
       fadeOut(entry.audio).then(() => {
         try { entry.audio.pause(); entry.audio.src = ''; } catch (e) { /* */ }
         AudioStore.activeSounds.delete(soundId);
+        if (this.rendered) this.render();
       });
     } else {
       AudioStore.activeSounds.delete(soundId);
