@@ -592,7 +592,7 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     { id: 'atmosphaere', label: 'Atmosphäre', icon: 'fas fa-city',           parents: ['Atmosphäre'] },
     { id: 'ereignisse',  label: 'Ereignisse', icon: 'fas fa-calendar-star',  parents: ['Ereignisse'] },
     { id: 'kampf',       label: 'Kampf',      icon: 'fas fa-swords',         parents: ['Kampf'] },
-    { id: 'kultur',      label: 'Kultur',     icon: 'fas fa-landmark-dome',  parents: ['Rassen', 'Flusswald', 'Orfnir'] },
+    { id: 'kultur',      label: 'Kultur',     icon: 'fas fa-landmark-dome',  parents: ['Rassen', 'Flusswald', 'Orfnir', 'Avernus'] },
     { id: 'monster',     label: 'Monster',    icon: 'fas fa-skull',          parents: ['Monster'] }
   ];
 
@@ -883,6 +883,17 @@ class SoundboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       requestAnimationFrame(() => {
         container.scrollTop = this.#scrollPosition;
       });
+    }
+
+    // Restore search input focus after re-render
+    if (this.#searchQuery) {
+      const searchInput = html.querySelector('[data-action="search"]');
+      if (searchInput) {
+        requestAnimationFrame(() => {
+          searchInput.focus();
+          searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        });
+      }
     }
 
     // --- Tab switching ---
