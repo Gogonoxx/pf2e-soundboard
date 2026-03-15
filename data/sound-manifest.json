@@ -1,7 +1,7 @@
 {
   "worker_base_url": "https://map-proxy.joshua-e6f.workers.dev",
-  "onedrive_base_path": "",
-  "generated_at": "2026-03-08T06:48:50.003Z",
+  "onedrive_base_path": "Pathfinder 2E/Musik",
+  "generated_at": "2026-03-15T04:37:34.436Z",
   "tabs": {
     "ambience": {
       "behavior": "loop-multi",
@@ -16502,6 +16502,219 @@
           ]
         },
         {
+          "id": "cat-avernus",
+          "name": "Avernus",
+          "parent": "Avernus",
+          "subfolder": null,
+          "icon": "fas fa-music",
+          "sounds": [
+            {
+              "id": "snd-avernus-crash",
+              "name": "CRASH",
+              "path": "Avernus/CRASH.mp3",
+              "ext": ".mp3"
+            },
+            {
+              "id": "snd-avernus-chase-aggressiv-brutal-blood-bag-mad-max",
+              "name": "Chase - Aggressiv, Brutal - Blood Bag",
+              "path": "Avernus/Chase - Aggressiv, Brutal - Blood Bag (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-chase-aggressiv-rammen-spikey-cars-mad-max",
+              "name": "Chase - Aggressiv, Rammen - Spikey Cars",
+              "path": "Avernus/Chase - Aggressiv, Rammen - Spikey Cars (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-chase-dringend-flucht-escape-mad-max",
+              "name": "Chase - Dringend, Flucht - Escape",
+              "path": "Avernus/Chase - Dringend, Flucht - Escape (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-chase-episch-unerbittlich-klimax-the-chase-mad-m",
+              "name": "Chase - Episch, Unerbittlich, Klimax - The Chase",
+              "path": "Avernus/Chase - Episch, Unerbittlich, Klimax - The Chase (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-chase-hektisch-verzweifelt-claw-trucks-mad-max",
+              "name": "Chase - Hektisch, Verzweifelt - Claw Trucks",
+              "path": "Avernus/Chase - Hektisch, Verzweifelt - Claw Trucks (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-chase-hinterhalt-bedrohlich-buzzards-arrive-mad-",
+              "name": "Chase - Hinterhalt, Bedrohlich - Buzzards Arrive",
+              "path": "Avernus/Chase - Hinterhalt, Bedrohlich - Buzzards Arrive (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-combat-episch-heroisch-klimax-brothers-in-arms-m",
+              "name": "Combat - Episch, Heroisch, Klimax - Brothers In Arms",
+              "path": "Avernus/Combat - Episch, Heroisch, Klimax - Brothers In Arms (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-combat-fanatisch-glorie-opfer-walhalla-awaits-ma",
+              "name": "Combat - Fanatisch, Glorie, Opfer - Walhalla Awaits",
+              "path": "Avernus/Combat - Fanatisch, Glorie, Opfer - Walhalla Awaits (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-combat-kriegstrommeln-einschuechternd-chapter-do",
+              "name": "Combat - Kriegstrommeln, Einschüchternd - Chapter Doof",
+              "path": "Avernus/Combat - Kriegstrommeln, Einschüchternd - Chapter Doof (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-combat-ueberleben-verzweifelt-survive-mad-max",
+              "name": "Combat - Ueberleben, Verzweifelt - Survive",
+              "path": "Avernus/Combat - Ueberleben, Verzweifelt - Survive (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-exploration-ominoes-grandios-festung-immortan-s-",
+              "name": "Exploration - Ominoes, Grandios, Festung - Immortan's Citadel",
+              "path": "Avernus/Exploration - Ominoes, Grandios, Festung - Immortan's Citadel (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-hazard-langsam-bedrueckend-falle-the-bog-mad-max",
+              "name": "Hazard - Langsam, Bedrueckend, Falle - The Bog",
+              "path": "Avernus/Hazard - Langsam, Bedrueckend, Falle - The Bog (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-mb-riding",
+              "name": "MB riding",
+              "path": "Avernus/MB riding.mp3",
+              "ext": ".mp3"
+            },
+            {
+              "id": "snd-avernus-mb-startup",
+              "name": "MB startup",
+              "path": "Avernus/MB startup.wav",
+              "ext": ".wav"
+            },
+            {
+              "id": "snd-avernus-overland-entschlossen-vorwaerts-moving-on-mad-ma",
+              "name": "Overland - Entschlossen, Vorwaerts - Moving On",
+              "path": "Avernus/Overland - Entschlossen, Vorwaerts - Moving On (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-overland-nacht-unheimlich-oede-mary-jo-bassa-mad",
+              "name": "Overland - Nacht, Unheimlich, Oede - Mary Jo Bassa",
+              "path": "Avernus/Overland - Nacht, Unheimlich, Oede - Mary Jo Bassa (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-overland-ominoes-sturm-aufbauend-storm-is-coming",
+              "name": "Overland - Ominoes, Sturm, Aufbauend - Storm Is Coming",
+              "path": "Avernus/Overland - Ominoes, Sturm, Aufbauend - Storm Is Coming (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-overland-spannung-terrain-into-the-canyon-mad-ma",
+              "name": "Overland - Spannung, Terrain - Into the Canyon",
+              "path": "Avernus/Overland - Spannung, Terrain - Into the Canyon (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-overland-stetig-mechanisch-reise-the-rig-mad-max",
+              "name": "Overland - Stetig, Mechanisch, Reise - The Rig",
+              "path": "Avernus/Overland - Stetig, Mechanisch, Reise - The Rig (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-overland-trostlos-wendepunkt-the-return-to-nowhe",
+              "name": "Overland - Trostlos, Wendepunkt - The Return To Nowhere",
+              "path": "Avernus/Overland - Trostlos, Wendepunkt - The Return To Nowhere (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-rest-kostbar-ehrfuerchtig-oase-water-mad-max",
+              "name": "Rest - Kostbar, Ehrfuerchtig, Oase - Water",
+              "path": "Avernus/Rest - Kostbar, Ehrfuerchtig, Oase - Water (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-rest-melancholisch-reflektiv-coda-mad-max",
+              "name": "Rest - Melancholisch, Reflektiv - Coda",
+              "path": "Avernus/Rest - Melancholisch, Reflektiv - Coda (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-social-dramatisch-offenbarung-my-name-is-max-mad",
+              "name": "Social - Dramatisch, Offenbarung - My Name Is Max",
+              "path": "Avernus/Social - Dramatisch, Offenbarung - My Name Is Max (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-social-emotional-lager-verbuendete-many-mothers-",
+              "name": "Social - Emotional, Lager, Verbuendete - Many Mothers",
+              "path": "Avernus/Social - Emotional, Lager, Verbuendete - Many Mothers (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-social-hoffnung-atempause-let-them-up-mad-max",
+              "name": "Social - Hoffnung, Atempause - Let Them Up",
+              "path": "Avernus/Social - Hoffnung, Atempause - Let Them Up (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-social-trotzig-stille-staerke-we-are-not-things-",
+              "name": "Social - Trotzig, Stille Staerke - We Are Not Things",
+              "path": "Avernus/Social - Trotzig, Stille Staerke - We Are Not Things (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-v8-ref",
+              "name": "V8 Ref",
+              "path": "Avernus/V8 Ref.wav",
+              "ext": ".wav"
+            },
+            {
+              "id": "snd-avernus-v8-idle",
+              "name": "V8 idle",
+              "path": "Avernus/V8 idle.wav",
+              "ext": ".wav"
+            },
+            {
+              "id": "snd-avernus-v8-riding",
+              "name": "V8 riding",
+              "path": "Avernus/V8 riding.wav",
+              "ext": ".wav"
+            },
+            {
+              "id": "snd-avernus-v8-start-idle",
+              "name": "V8 start&idle",
+              "path": "Avernus/V8 start&idle.wav",
+              "ext": ".wav"
+            },
+            {
+              "id": "snd-avernus-victory-triumph-emotional-redemption-mad-max",
+              "name": "Victory - Triumph, Emotional - Redemption",
+              "path": "Avernus/Victory - Triumph, Emotional - Redemption (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-villain-dunkel-imposant-furcht-immortan-mad-max",
+              "name": "Villain - Dunkel, Imposant, Furcht - Immortan",
+              "path": "Avernus/Villain - Dunkel, Imposant, Furcht - Immortan (Mad Max).m4a",
+              "ext": ".m4a"
+            },
+            {
+              "id": "snd-avernus-soulcoin-verbraucht",
+              "name": "soulcoin verbraucht",
+              "path": "Avernus/soulcoin verbraucht.wav",
+              "ext": ".wav"
+            }
+          ]
+        },
+        {
           "id": "cat-ereignisse-barden",
           "name": "Ereignisse — Barden",
           "parent": "Ereignisse",
@@ -21140,7 +21353,7 @@
     }
   },
   "stats": {
-    "total_files": 3295,
-    "total_categories": 150
+    "total_files": 3329,
+    "total_categories": 151
   }
 }
