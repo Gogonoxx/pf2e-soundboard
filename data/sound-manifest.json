@@ -1,7 +1,7 @@
 {
   "worker_base_url": "https://map-proxy.joshua-e6f.workers.dev",
-  "onedrive_base_path": "Pathfinder 2E/Musik",
-  "generated_at": "2026-03-15T04:37:34.436Z",
+  "onedrive_base_path": "",
+  "generated_at": "2026-03-15T06:47:21.655Z",
   "tabs": {
     "ambience": {
       "behavior": "loop-multi",

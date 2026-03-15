@@ -24,7 +24,7 @@ const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'sound-manifest.json');
 const WORKER_BASE_URL = 'https://map-proxy.joshua-e6f.workers.dev';
 
 // Base path on OneDrive (relative to the share root)
-// The music share already points to the Musik folder, so no prefix needed
+// This needs to match how the Worker resolves paths
 const ONEDRIVE_BASE_PATH = '';
 
 // Tab mapping: which top-level folders go to which tab
